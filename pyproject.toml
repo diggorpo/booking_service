@@ -1,0 +1,20 @@
+[project]
+name = "booking-service"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Your Name",email = "you@example.com"}
+]
+license = "MIT"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi (>=0.136.3,<0.137.0)",
+    "asyncio (>=4.0.0,<5.0.0)",
+    "sqlalchemy (>=2.0.50,<3.0.0)",
+    "pydantic (>=2.13.4,<3.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
