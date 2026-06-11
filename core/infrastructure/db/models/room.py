@@ -4,10 +4,10 @@ from sqlalchemy import Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import expression
 
-from core.models.base import Base
+from core.infrastructure.db.models.base import Base
 
 if TYPE_CHECKING:
-    from core.models.slot import Slot
+    from core.infrastructure.db.models.slot import Slot
 
 
 class Room(Base):

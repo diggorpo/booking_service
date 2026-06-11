@@ -5,11 +5,11 @@ from typing import TYPE_CHECKING
 from sqlalchemy import DateTime, ForeignKey, Index, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from core.models.base import Base
+from core.infrastructure.db.models.base import Base
 
 if TYPE_CHECKING:
-    from core.models.slot import Slot
-    from core.models.user import User
+    from core.infrastructure.db.models.slot import Slot
+    from core.infrastructure.db.models.user import User
 
 
 class Status(enum.Enum):
