@@ -18,5 +18,3 @@ class Config(BaseSettings):
 
 
 settings = Config()
-
-print(BASE_DIR)
