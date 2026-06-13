@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import Depends
+from fastapi import Depends, HTTPException, status
 from api.api_v1.auth.handler import AuthHandler
 from api.api_v1.auth.schemas import (
     RegisterUserSchema,
@@ -29,6 +29,18 @@ class UserService:
         created_user = await self.user_repo.create(self.db_session, db_dto.model_dump())
         await self.db_session.commit()
         return UserResponseSchema.model_validate(created_user)
-    
-    async def validate_user(self, email: str, password: str) -> UserResponseSchema | None:
 
+    async def validate_user(
+        self, email: str, password: str
+    ) -> UserResponseSchema | None:
+
+        user = await self.user_repo.find_one(self.db_session, email=email)
+        if not user or not self.auth_handler.validate_password(
+            password, user.password_hash
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid email or password",
+            )
+
+        return UserResponseSchema.model_validate(user)
