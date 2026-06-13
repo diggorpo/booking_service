@@ -14,4 +14,4 @@ class Room(Base):
     is_active: Mapped[bool] = mapped_column(
         Boolean, default=True, server_default=expression.true()
     )
-    slots: Mapped[list["Slot"]] = relationship(back_populates="rooms")
+    slots: Mapped[list["Slot"]] = relationship(back_populates="room")

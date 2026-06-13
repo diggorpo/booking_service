@@ -6,7 +6,7 @@ router = APIRouter(tags=["Bookings"])
 
 
 @router.post(
-    "/create",
+    "/",
     response_model=SlotCreationResponseSchema,
     status_code=status.HTTP_201_CREATED,
 )
@@ -15,7 +15,7 @@ def create_slot():
 
 
 @router.delete(
-    "/delete/{slot_id}",
+    "/{slot_id}",
     status_code=status.HTTP_202_ACCEPTED,
 )
 def change_booking_status():

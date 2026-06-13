@@ -1,23 +1,25 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Depends, status
 from .schemas import UserCreationSchema
+from api.deps.db_session import get_db_session
+from core.infrastructure.db.repositories.users import SQLAlchemyBaseRepository
 
 router = APIRouter(tags=["Users"])
 
 
 @router.post(
-    "/create", response_model=UserCreationSchema, status_code=status.HTTP_201_CREATED
+    "/login", response_model=UserCreationSchema, status_code=status.HTTP_201_CREATED
 )
-async def create_user():
+async def create_user(payload: UserCreationSchema, session=Depends(get_db_session)):
     pass
 
 
 @router.patch(
-    "/update", response_model=UserCreationSchema, status_code=status.HTTP_202_ACCEPTED
+    "", response_model=UserCreationSchema, status_code=status.HTTP_202_ACCEPTED
 )
 async def update_user():
     pass
 
 
-@router.delete("/delete", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user():
     pass

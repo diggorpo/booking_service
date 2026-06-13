@@ -6,7 +6,7 @@ router = APIRouter(tags=["Bookings"])
 
 
 @router.post(
-    "/book/{slot_id}",
+    "/{slot_id}",
     response_model=BookingResponseSchema,
     status_code=status.HTTP_201_CREATED,
 )
@@ -15,7 +15,7 @@ def book_slot():
 
 
 @router.patch(
-    "/change_status/{book_id}",
+    "/statuses/{book_id}",
     response_model=BookingResponseSchema,
     status_code=status.HTTP_202_ACCEPTED,
 )
