@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, HTTPException
 
 from api.api_v1.auth.services import UserService
-from .schemas import RegisterUserSchema, UserResponseSchema
+from .schemas import LoginUserSchema, RegisterUserSchema, UserResponseSchema
 
 
 router = APIRouter(tags=["Users"])
@@ -15,11 +15,12 @@ async def register_user(payload: RegisterUserSchema, user_service=Depends(UserSe
     return created_user
 
 
-# @router.patch(
-#     "/login", response_model=UserCreationSchema, status_code=status.HTTP_202_ACCEPTED
-# )
-# async def login_user():
-#     pass
+@router.post(
+    "/login", response_model=UserResponseSchema, status_code=status.HTTP_200_OK
+)
+async def login_user(payload: LoginUserSchema, user_service=Depends(UserService)):
+
+    return await user_service.validate_user(payload.email, payload.password)
 
 
 # @router.post(
