@@ -1,7 +1,10 @@
-from datetime import datetime, timedelta
+import uuid
+from datetime import datetime, timedelta, timezone
 import jwt
 from core.config import settings
 import bcrypt
+
+from .named_tuples import CreateTokenTuple
 
 
 class AuthHandler:
@@ -14,16 +17,20 @@ class AuthHandler:
         self,
         payload: dict,
         expire_timedelta: timedelta | None = None,
-    ) -> str:
+    ) -> CreateTokenTuple:
 
         to_encode = payload.copy()
-        now = datetime.now(datetime.timezone.utc)
+        now = datetime.now(timezone.utc)
         if expire_timedelta:
             expire = now + expire_timedelta
         else:
             expire = now + timedelta(minutes=self.expire_minutes)
-        to_encode.update(exp=expire, iat=now)
-        return jwt.encode(payload, self.private_key, algorithm=self.algorithm)
+        session_id = str(uuid.UUID())
+
+        to_encode.update(exp=expire, iat=now, session_id=session_id)
+        encoded_jwt = jwt.encode(payload, self.private_key, algorithm=self.algorithm)
+
+        return CreateTokenTuple(encoded_jwt, session_id)
 
     async def decode_jwt(
         self,
