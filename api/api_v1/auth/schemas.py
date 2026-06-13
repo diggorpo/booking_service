@@ -9,6 +9,11 @@ class BaseUserSchema(BaseModel):
     phone_number: PhoneNumber
 
 
+class LoginUserSchema(BaseModel):
+    email: EmailStr
+    password: str
+
+
 class RegisterUserSchema(BaseUserSchema):
     password: str
 
