@@ -8,20 +8,20 @@ T = TypeVar("T")
 
 class BaseRepository(ABC, Generic[T]):
     @abstractmethod
-    async def create(self, data: dict) -> T | None:
+    async def create(self, session, data: dict) -> T | None:
         raise NotImplementedError
 
     @abstractmethod
-    async def find_one(self, **filter_by: Any) -> T | None:
+    async def find_one(self, session, **filter_by: Any) -> T | None:
         raise NotImplementedError
 
     @abstractmethod
-    async def get_by_id(self, id: int) -> T | None:
+    async def get_by_id(self, session, id: int) -> T | None:
         raise NotImplementedError
 
 
-class SQLAlchemyBaseRepository(BaseRepository):
-    model: type[T] | None = None
+class SQLAlchemyBaseRepository(BaseRepository[T], Generic[T]):
+    model: type[T]
 
     async def create(self, session, data: dict) -> T:
 
