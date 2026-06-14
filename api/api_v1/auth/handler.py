@@ -25,7 +25,7 @@ class AuthHandler:
             expire = now + expire_timedelta
         else:
             expire = now + timedelta(minutes=self.expire_minutes)
-        session_id = str(uuid.UUID())
+        session_id = str(uuid.uuid4())
 
         to_encode.update(exp=expire, iat=now, session_id=session_id)
         encoded_jwt = jwt.encode(payload, self.private_key, algorithm=self.algorithm)
@@ -36,8 +36,12 @@ class AuthHandler:
         self,
         token: str | bytes,
     ) -> dict:
-
-        return jwt.decode(token, self.public_key, algorithms=[self.algorithm])
+        try:
+            return jwt.decode(token, self.public_key, algorithms=[self.algorithm])
+        except jwt.ExpiredSignatureError:
+            raise Exception("Token has expired")
+        except jwt.InvalidTokenError:
+            raise Exception("Invalid token")
 
     @staticmethod
     def hash_password(password: str) -> bytes:
