@@ -32,10 +32,10 @@ class UserService:
         await self.db_session.commit()
         return UserResponseSchema.model_validate(created_user)
 
-    async def validate_user(self, email: str, password: str) -> JSONResponse | None:
+    async def login_user(self, email: str, password: str) -> JSONResponse | None:
 
         user = await self.user_repo.find_one(self.db_session, email=email)
-        if not user or not self.auth_handler.validate_password(
+        if not user or not await self.auth_handler.validate_password(
             password, user.password_hash
         ):
             raise HTTPException(
@@ -50,5 +50,24 @@ class UserService:
             httponly=True,
             max_age=settings.auth_jwt.access_token_expire_minutes * 60,
         )
+
+        return response
+
+    async def get_user_by_id(self, id) -> UserResponseSchema:
+
+        user = await self.user_repo.get_by_id(self.db_session, id)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found",
+            )
+
+        return UserResponseSchema.model_validate(user)
+
+    async def logout_user(self, user: UserResponseSchema) -> JSONResponse:
+
+        response = JSONResponse(content={"message": "Logged out"})
+
+        response.delete_cookie("Authorization")
 
         return response
