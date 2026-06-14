@@ -1,3 +1,4 @@
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, HTTPException, status
 from api.api_v1.auth.handler import AuthHandler
@@ -8,6 +9,7 @@ from api.api_v1.auth.schemas import (
 )
 from api.deps.db_session import get_db_session
 from core.infrastructure.db.repositories.users import UserRepository
+from core.config import settings
 
 
 class UserService:
@@ -30,9 +32,7 @@ class UserService:
         await self.db_session.commit()
         return UserResponseSchema.model_validate(created_user)
 
-    async def validate_user(
-        self, email: str, password: str
-    ) -> UserResponseSchema | None:
+    async def validate_user(self, email: str, password: str) -> JSONResponse | None:
 
         user = await self.user_repo.find_one(self.db_session, email=email)
         if not user or not self.auth_handler.validate_password(
@@ -42,5 +42,13 @@ class UserService:
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid email or password",
             )
+        jwt_token, session_id = await self.auth_handler.encode_jwt({"user_id": user.id})
+        response = JSONResponse(content={"massege": "Login successful"})
+        response.set_cookie(
+            key="Authorization",
+            value=jwt_token,
+            httponly=True,
+            max_age=settings.auth_jwt.access_token_expire_minutes * 60,
+        )
 
-        return UserResponseSchema.model_validate(user)
+        return response
