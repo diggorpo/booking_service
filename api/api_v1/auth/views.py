@@ -2,8 +2,8 @@ from typing import Annotated
 from fastapi.responses import JSONResponse
 from fastapi import APIRouter, Depends, status
 
-from api.api_v1.auth.deps import get_current_user
-from api.api_v1.auth.services import UserService
+from api.deps.get_current_user import get_current_user
+from api.api_v1.auth.service import UserService
 from .schemas import LoginUserSchema, RegisterUserSchema, UserResponseSchema
 
 
