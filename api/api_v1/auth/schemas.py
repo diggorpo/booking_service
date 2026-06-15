@@ -25,3 +25,7 @@ class CreateUserSchema(BaseUserSchema):
 class UserResponseSchema(BaseUserSchema):
     id: int
     model_config = ConfigDict(from_attributes=True)
+
+
+class UserVerifySchema(BaseModel):
+    pass

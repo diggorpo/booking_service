@@ -2,9 +2,9 @@ from fastapi import Depends
 from typing import Annotated
 
 from api.api_v1.auth.schemas import UserResponseSchema
-from api.api_v1.auth.services import UserService
-from .utils import get_token_from_cookie
-from .handler import AuthHandler
+from api.api_v1.auth.service import UserService
+from ..api_v1.auth.utils import get_token_from_cookie
+from ..api_v1.auth.handler import AuthHandler
 
 
 async def get_current_user(
