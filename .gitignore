@@ -1,7 +1,9 @@
 .venv
 *.sqlite3
 *.pyc
-
+.env
 /certs
 
 .vscode
+
+.ruff_cache
