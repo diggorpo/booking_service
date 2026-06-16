@@ -28,7 +28,7 @@ class AuthHandler:
         session_id = str(uuid.uuid4())
 
         to_encode.update(exp=expire, iat=now, session_id=session_id)
-        encoded_jwt = jwt.encode(payload, self.private_key, algorithm=self.algorithm)
+        encoded_jwt = jwt.encode(to_encode, self.private_key, algorithm=self.algorithm)
 
         return CreateTokenTuple(encoded_jwt, session_id)
 
