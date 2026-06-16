@@ -1,11 +1,11 @@
-from datetime import datetime
+from datetime import time
 
 from pydantic import BaseModel, ConfigDict
 
 
 class BaseSlotSchema(BaseModel):
-    start_time: datetime | None = None
-    end_time: datetime | None = None
+    start_time: time | None = None
+    end_time: time | None = None
 
 
 class Room(BaseModel):
@@ -23,8 +23,7 @@ class SlotQueryParams(BaseSlotSchema):
 
 
 class SlotResponseSchema(BaseModel):
-    start_time: datetime
-    end_time: datetime
+    start_time: time
+    end_time: time
     room_id: int
-    is_available: bool = True
     model_config = ConfigDict(from_attributes=True)
