@@ -20,10 +20,6 @@ class BaseRepository(ABC, Generic[T]):
         raise NotImplementedError
 
     @abstractmethod
-    async def update_by_id(self, session, id: int) -> T | None:
-        raise NotImplementedError
-
-    @abstractmethod
     async def get_many(self, session, order_by, **filter_by: Any) -> Sequence[T]:
         raise NotImplementedError
 
@@ -53,8 +49,12 @@ class SQLAlchemyBaseRepository(BaseRepository[T], Generic[T]):
         self, session, order_by: str = "id", **filter_by: Any
     ) -> Sequence[T]:
 
-        stmt = select(self.model).order_by(asc(getattr(self.model, order_by)))
+        stmt = (
+            select(self.model)
+            .filter_by(**filter_by)
+            .order_by(asc(getattr(self.model, order_by)))
+        )
 
-        result = await self.session.execute(stmt)
+        result = await session.execute(stmt)
 
         return result.scalars().all()
