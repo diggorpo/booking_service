@@ -1,5 +1,6 @@
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import IntegrityError
 from fastapi import Depends, HTTPException, status
 from api.api_v1.auth.handler import AuthHandler
 from api.api_v1.auth.schemas import (
@@ -24,13 +25,22 @@ class UserService:
         self.auth_handler = auth_handler
 
     async def register_user(self, user: RegisterUserSchema) -> UserResponseSchema:
-        hashed = self.auth_handler.hash_password(user.password)
 
-        db_dto = CreateUserSchema(**user.model_dump(), password_hash=hashed)
+        try:
+            hashed = self.auth_handler.hash_password(user.password)
 
-        created_user = await self.user_repo.create(self.db_session, db_dto.model_dump())
-        await self.db_session.commit()
-        return UserResponseSchema.model_validate(created_user)
+            db_dto = CreateUserSchema(**user.model_dump(), password_hash=hashed)
+
+            created_user = await self.user_repo.create(
+                self.db_session, db_dto.model_dump(), ["role"]
+            )
+            await self.db_session.commit()
+            return UserResponseSchema.model_validate(created_user)
+        except IntegrityError:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="User with such email already exists",
+            )
 
     async def login_user(self, email: str, password: str) -> JSONResponse | None:
 
@@ -43,7 +53,7 @@ class UserService:
                 detail="Invalid email or password",
             )
         jwt_token, session_id = await self.auth_handler.encode_jwt({"user_id": user.id})
-        response = JSONResponse(content={"massege": "Login successful"})
+        response = JSONResponse(content={"message": "Login successful"})
         response.set_cookie(
             key="Authorization",
             value=jwt_token,
@@ -55,7 +65,7 @@ class UserService:
 
     async def get_user_by_id(self, id) -> UserResponseSchema:
 
-        user = await self.user_repo.get_by_id(self.db_session, id)
+        user = await self.user_repo.get_by_id(self.db_session, id, ["role"])
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,

@@ -1,6 +1,7 @@
 from datetime import date
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
+from core.infrastructure.db.models.booking import Status
 
 from fastapi import Depends, HTTPException, status
 
@@ -23,7 +24,9 @@ class BookingService:
     ) -> BookingResponseSchema:
         try:
             booking = await self.repo.create(
-                self.db_session, {"slot_id": slot_id, "user_id": user_id, "date": date}
+                self.db_session,
+                {"slot_id": slot_id, "user_id": user_id, "date": date},
+                refresh_attributes=["slot"],
             )
             await self.db_session.commit()
             return BookingResponseSchema.model_validate(booking)
@@ -34,10 +37,12 @@ class BookingService:
                 detail="Slot is already booked or doesn't exist",
             )
 
-    async def change_status(
-        self, booking_id: int, user_id: int, book_status
+    async def cancel_booking(
+        self,
+        booking_id: int,
+        user_id: int,
     ) -> BookingResponseSchema:
-        booking = await self.repo.get_by_id(self.db_session, booking_id)
+        booking = await self.repo.get_by_id(self.db_session, booking_id, ["slot"])
 
         if not booking:
             raise HTTPException(
@@ -49,9 +54,18 @@ class BookingService:
                 detail="Not accessed to the booking",
             )
 
-        booking.status = book_status
+        cancelled_booking = await self.repo.update(
+            session=self.db_session,
+            obj=booking,
+            data={"status": Status.CANCELLED_BY_USER},
+        )
         await self.db_session.commit()
-        await self.db_session.flush()
-        await self.db_session.refresh(booking, attribute_names=["slot"])
+        return BookingResponseSchema.model_validate(cancelled_booking)
 
-        return BookingResponseSchema.model_validate(booking)
+    async def get_many_bookings(self, user_id) -> list[BookingResponseSchema]:
+
+        bookings = await self.repo.get_user_bookings_with_slots(
+            self.db_session, **{"user_id": user_id}
+        )
+
+        return [BookingResponseSchema.model_validate(booking) for booking in bookings]

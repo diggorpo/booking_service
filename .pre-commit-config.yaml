@@ -16,10 +16,9 @@ repos:
         types: [python]
 
       
-      - id: ty-check
-        name: ty-check
-        
-        entry: poetry run ty check
+      - id: mypy
+        name: mypy
+        entry: poetry run mypy .
         language: system
         types: [python]
         pass_filenames: false
