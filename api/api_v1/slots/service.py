@@ -1,10 +1,9 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends
 
 from api.api_v1.slots.schemas import SlotResponseSchema
 from api.deps.db_session import get_db_session
 from core.infrastructure.db.repositories import SlotRepository
-from core.config import settings
 
 
 class SlotService:
