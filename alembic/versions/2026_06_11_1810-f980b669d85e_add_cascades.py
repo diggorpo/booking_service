@@ -5,13 +5,13 @@ Revises: 36b86626afd4
 Create Date: 2026-06-11 18:10:22.092182
 
 """
+
 from typing import Sequence, Union
 
 
-
 # revision identifiers, used by Alembic.
-revision: str = 'f980b669d85e'
-down_revision: Union[str, Sequence[str], None] = '36b86626afd4'
+revision: str = "f980b669d85e"
+down_revision: Union[str, Sequence[str], None] = "36b86626afd4"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
