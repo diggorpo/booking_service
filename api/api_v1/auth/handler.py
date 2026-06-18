@@ -36,12 +36,8 @@ class AuthHandler:
         self,
         token: str | bytes,
     ) -> dict:
-        try:
-            return jwt.decode(token, self.public_key, algorithms=[self.algorithm])
-        except jwt.ExpiredSignatureError:
-            raise Exception("Token has expired")
-        except jwt.InvalidTokenError:
-            raise Exception("Invalid token")
+
+        return jwt.decode(token, self.public_key, algorithms=[self.algorithm])
 
     @staticmethod
     def hash_password(password: str) -> bytes:
@@ -54,3 +50,6 @@ class AuthHandler:
 
         pwd_bytes = password.encode("utf-8")
         return bcrypt.checkpw(pwd_bytes, hashed)
+
+
+auth_handler = AuthHandler()
