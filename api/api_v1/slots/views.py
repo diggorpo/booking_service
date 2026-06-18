@@ -1,17 +1,23 @@
 from typing import Annotated
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 
 
-from .schemas import SlotQueryParams, SlotResponseSchema
+from .schemas import (
+    DayAvailabilitySchema,
+    SlotAvailabilityQuery,
+)
 from .service import SlotService
 
 router = APIRouter(tags=["Slots"])
 
 
-@router.get("", response_model=list[SlotResponseSchema])
-async def show_slots(
-    params: Annotated[SlotQueryParams, Depends()],
+@router.get(
+    "/availability",
+    response_model=list[DayAvailabilitySchema],
+    status_code=status.HTTP_200_OK,
+)
+async def get_available_slots(
+    params: Annotated[SlotAvailabilityQuery, Depends()],
     service: SlotService = Depends(SlotService),
 ):
-
-    return await service.get_many_slots(params)
+    return await service.get_free_slots(params)

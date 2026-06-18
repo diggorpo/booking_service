@@ -6,7 +6,7 @@ from api.deps.require_role import require_role
 from .auth.views import router as auth_router
 from .slots.views import router as slots_router
 from .bookings.views import router as bookings_router
-from .admin.bookings.views import router as admin_booking_router
+from .bookings.admin.views import router as admin_booking_router
 
 
 router = APIRouter()

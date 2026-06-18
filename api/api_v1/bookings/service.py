@@ -1,6 +1,7 @@
 from datetime import date
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
+from api.deps.get_repo import get_repository
 from core.infrastructure.db.models.booking import Status
 
 from fastapi import Depends, HTTPException, status
@@ -14,7 +15,7 @@ class BookingService:
     def __init__(
         self,
         db_session: AsyncSession = Depends(get_db_session),
-        repo: BookingRepository = Depends(BookingRepository),
+        repo: BookingRepository = Depends(get_repository(BookingRepository)),
     ):
         self.db_session = db_session
         self.repo = repo
@@ -24,7 +25,6 @@ class BookingService:
     ) -> BookingResponseSchema:
         try:
             booking = await self.repo.create(
-                self.db_session,
                 {"slot_id": slot_id, "user_id": user_id, "date": date},
                 refresh_attributes=["slot"],
             )
@@ -42,7 +42,7 @@ class BookingService:
         booking_id: int,
         user_id: int,
     ) -> BookingResponseSchema:
-        booking = await self.repo.get_by_id(self.db_session, booking_id, ["slot"])
+        booking = await self.repo.get_by_id(booking_id, ["slot"])
 
         if not booking:
             raise HTTPException(
@@ -55,7 +55,6 @@ class BookingService:
             )
 
         cancelled_booking = await self.repo.update(
-            session=self.db_session,
             obj=booking,
             data={"status": Status.CANCELLED_BY_USER},
         )
@@ -65,7 +64,6 @@ class BookingService:
     async def get_many_bookings(self, user_id) -> list[BookingResponseSchema]:
 
         bookings = await self.repo.get_many(
-            self.db_session,
             joins=["slot"],
             **{"user_id": user_id},
         )

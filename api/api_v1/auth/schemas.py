@@ -25,7 +25,7 @@ class CreateUserSchema(BaseUserSchema):
 
 class RolesEnum(StrEnum):
     ADMIN = "admin"
-    MANAGER = "manager"
+    EMPLOYEE = "employee"
     CLIENT = "client"
 
 

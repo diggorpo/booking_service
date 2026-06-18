@@ -9,6 +9,7 @@ from api.api_v1.auth.schemas import (
     CreateUserSchema,
 )
 from api.deps.db_session import get_db_session
+from api.deps.get_repo import get_repository
 from core.infrastructure.db.repositories.users import UserRepository
 from core.config import settings
 
@@ -17,7 +18,7 @@ class UserService:
     def __init__(
         self,
         db_session: AsyncSession = Depends(get_db_session),
-        user_repo: UserRepository = Depends(UserRepository),
+        user_repo: UserRepository = Depends(get_repository(UserRepository)),
         auth_handler: AuthHandler = Depends(AuthHandler),
     ):
         self.db_session = db_session
@@ -31,9 +32,7 @@ class UserService:
 
             db_dto = CreateUserSchema(**user.model_dump(), password_hash=hashed)
 
-            created_user = await self.user_repo.create(
-                self.db_session, db_dto.model_dump(), ["role"]
-            )
+            created_user = await self.user_repo.create(db_dto.model_dump(), ["role"])
             await self.db_session.commit()
             return UserResponseSchema.model_validate(created_user)
         except IntegrityError:
@@ -44,7 +43,7 @@ class UserService:
 
     async def login_user(self, email: str, password: str) -> JSONResponse | None:
 
-        user = await self.user_repo.find_one(self.db_session, email=email)
+        user = await self.user_repo.find_one(email=email)
         if not user or not await self.auth_handler.validate_password(
             password, user.password_hash
         ):
@@ -65,7 +64,7 @@ class UserService:
 
     async def get_user_by_id(self, id) -> UserResponseSchema:
 
-        user = await self.user_repo.get_by_id(self.db_session, id, ["role"])
+        user = await self.user_repo.get_by_id(id, ["role"])
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,

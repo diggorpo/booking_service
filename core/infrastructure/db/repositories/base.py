@@ -12,32 +12,28 @@ class BaseRepository(ABC, Generic[T]):
     @abstractmethod
     async def create(
         self,
-        session: AsyncSession,
         data: dict,
         refresh_attributes: list[str] | None = None,
     ) -> T | None:
         raise NotImplementedError
 
     @abstractmethod
-    async def find_one(self, session, **filter_by: Any) -> T | None:
+    async def find_one(self, **filter_by: Any) -> T | None:
         raise NotImplementedError
 
     @abstractmethod
-    async def get_by_id(
-        self, session: AsyncSession, id: int, joins: list[str] | None = None
-    ) -> T | None:
+    async def get_by_id(self, id: int, joins: list[str] | None = None) -> T | None:
         raise NotImplementedError
 
     @abstractmethod
     async def get_many(
-        self, session, order_by, joins: list[str] | None = None, **filter_by: Any
+        self, order_by, joins: list[str] | None = None, **filter_by: Any
     ) -> Sequence[T]:
         raise NotImplementedError
 
     @abstractmethod
     async def update(
         self,
-        session: AsyncSession,
         data: dict,
         id: int | None = None,
         joins: list[str] | None = None,
@@ -49,29 +45,29 @@ class BaseRepository(ABC, Generic[T]):
 class SQLAlchemyBaseRepository(BaseRepository[T], Generic[T]):
     model: type[T]
 
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
     async def create(
         self,
-        session: AsyncSession,
         data: dict,
         refresh_attributes: list[str] | None = None,
     ) -> T:
 
         obj = self.model(**data)
 
-        session.add(obj)
-        await session.flush()
-        await session.refresh(obj, refresh_attributes)
+        self.session.add(obj)
+        await self.session.flush()
+        await self.session.refresh(obj, refresh_attributes)
         return obj
 
-    async def find_one(self, session, **filter_by: Any) -> T | None:
+    async def find_one(self, **filter_by: Any) -> T | None:
 
         stmt = select(self.model).filter_by(**filter_by)
-        result = await session.execute(stmt)
+        result = await self.session.execute(stmt)
         return result.scalars().one_or_none()
 
-    async def get_by_id(
-        self, session: AsyncSession, id: int, joins: list[str] | None = None
-    ) -> T | None:
+    async def get_by_id(self, id: int, joins: list[str] | None = None) -> T | None:
 
         options = []
 
@@ -86,11 +82,10 @@ class SQLAlchemyBaseRepository(BaseRepository[T], Generic[T]):
                         f"Модель {self.model.__name__} не имеет связи с именем '{relation_name}'"
                     )
 
-        return await session.get(self.model, id, options=options)
+        return await self.session.get(self.model, id, options=options)
 
     async def get_many(
         self,
-        session,
         order_by: str = "id",
         joins: list[str] | None = None,
         **filter_by: Any,
@@ -117,13 +112,12 @@ class SQLAlchemyBaseRepository(BaseRepository[T], Generic[T]):
         if options:
             stmt = stmt.options(*options)
 
-        result = await session.execute(stmt)
+        result = await self.session.execute(stmt)
 
         return result.scalars().all()
 
     async def update(
         self,
-        session: AsyncSession,
         data: dict,
         id: int | None = None,
         joins: list[str] | None = None,
@@ -131,7 +125,7 @@ class SQLAlchemyBaseRepository(BaseRepository[T], Generic[T]):
     ) -> T | None:
 
         if not obj and id:
-            obj = await self.get_by_id(session, id, joins=joins)
+            obj = await self.get_by_id(id, joins=joins)
 
         if not obj:
             return None
@@ -140,9 +134,9 @@ class SQLAlchemyBaseRepository(BaseRepository[T], Generic[T]):
             if hasattr(obj, key):
                 setattr(obj, key, value)
 
-        await session.flush()
+        await self.session.flush()
 
         if joins:
-            await session.refresh(obj, attribute_names=joins)
+            await self.session.refresh(obj, attribute_names=joins)
 
         return obj
