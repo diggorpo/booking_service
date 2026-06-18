@@ -29,7 +29,9 @@ class BaseRepository(ABC, Generic[T]):
         raise NotImplementedError
 
     @abstractmethod
-    async def get_many(self, session, order_by, **filter_by: Any) -> Sequence[T]:
+    async def get_many(
+        self, session, order_by, joins: list[str] | None = None, **filter_by: Any
+    ) -> Sequence[T]:
         raise NotImplementedError
 
     @abstractmethod
@@ -87,14 +89,33 @@ class SQLAlchemyBaseRepository(BaseRepository[T], Generic[T]):
         return await session.get(self.model, id, options=options)
 
     async def get_many(
-        self, session, order_by: str = "id", **filter_by: Any
+        self,
+        session,
+        order_by: str = "id",
+        joins: list[str] | None = None,
+        **filter_by: Any,
     ) -> Sequence[T]:
+
+        options = []
+
+        if joins:
+            for relation_name in joins:
+                try:
+                    relation_attr = getattr(self.model, relation_name)
+
+                    options.append(joinedload(relation_attr))
+                except AttributeError:
+                    raise AttributeError(
+                        f"Модель {self.model.__name__} не имеет связи с именем '{relation_name}'"
+                    )
 
         stmt = (
             select(self.model)
             .filter_by(**filter_by)
             .order_by(asc(getattr(self.model, order_by)))
         )
+        if options:
+            stmt = stmt.options(*options)
 
         result = await session.execute(stmt)
 

@@ -46,7 +46,7 @@ async def book_slot(
     response_model=BookingResponseSchema,
     status_code=status.HTTP_200_OK,
 )
-async def change_booking_status(
+async def cancel_booking(
     booking_id: int,
     user: UserResponseSchema = Depends(get_current_user),
     service: BookingService = Depends(BookingService),
