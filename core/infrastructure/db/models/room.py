@@ -1,8 +1,7 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean
+from sqlalchemy import Boolean, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.sql import expression
 
 from core.infrastructure.db.models.base import Base
 
@@ -12,6 +11,6 @@ if TYPE_CHECKING:
 
 class Room(Base):
     is_active: Mapped[bool] = mapped_column(
-        Boolean, default=True, server_default=expression.true()
+        Boolean, default=True, server_default=text("true")
     )
     slots: Mapped[list["Slot"]] = relationship(back_populates="room")

@@ -12,11 +12,13 @@ class DatabaseHelper:
             echo=echo,
         )
 
-        @event.listens_for(self.engine.sync_engine, "connect")
-        def set_sqlite_pragma(dbapi_connection, connection_record):
-            cursor = dbapi_connection.cursor()
-            cursor.execute("PRAGMA foreign_keys=ON")
-            cursor.close()
+        if "sqlite" in url:
+
+            @event.listens_for(self.engine.sync_engine, "connect")
+            def set_sqlite_pragma(dbapi_connection, connection_record):
+                cursor = dbapi_connection.cursor()
+                cursor.execute("PRAGMA foreign_keys=ON")
+                cursor.close()
 
         self.session_factory = async_sessionmaker(
             bind=self.engine,
