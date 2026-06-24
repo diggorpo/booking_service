@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from api.api_v1.bookings.service import BookingService
 from api.api_v1.bookings.schemas import BookingResponseSchema
 from core.infrastructure.db.repositories.bookings import BookingRepository
+from core.infrastructure.db.repositories.slots import SlotRepository
 from core.infrastructure.db.models.booking import Status
 
 
@@ -22,10 +23,16 @@ def mock_booking_repo():
 
 
 @pytest.fixture
-def booking_service(mock_db_session, mock_booking_repo):
+def mock_slot_repo():
+    return AsyncMock(spec=SlotRepository)
+
+
+@pytest.fixture
+def booking_service(mock_db_session, mock_booking_repo, mock_slot_repo):
     service = BookingService.__new__(BookingService)
     service.db_session = mock_db_session
     service.repo = mock_booking_repo
+    service.slot_repo = mock_slot_repo
     return service
 
 
@@ -33,7 +40,7 @@ def booking_service(mock_db_session, mock_booking_repo):
 def mock_booking():
     booking = MagicMock()
     booking.id = 1
-    booking.date = date(2026, 6, 20)
+    booking.date = date(2026, 7, 20)
     booking.created_at = datetime(2026, 6, 19, 12, 0, 0, tzinfo=timezone.utc)
     booking.updated_at = datetime(2026, 6, 19, 12, 0, 0, tzinfo=timezone.utc)
     booking.status = Status.BOOKED
@@ -53,31 +60,57 @@ class TestCreateBooking:
         mock_booking_repo.create.return_value = mock_booking
 
         result = await booking_service.create_booking(
-            slot_id=1, date=date(2026, 6, 20), user_id=2
+            slot_id=1, booking_date=date(2026, 7, 20), user_id=2
         )
 
         assert isinstance(result, BookingResponseSchema)
         assert result.id == 1
-        assert result.date == date(2026, 6, 20)
+        assert result.date == date(2026, 7, 20)
         mock_booking_repo.create.assert_awaited_once_with(
-            {"slot_id": 1, "user_id": 2, "date": date(2026, 6, 20)},
+            {"slot_id": 1, "user_id": 2, "date": date(2026, 7, 20)},
             refresh_attributes=["slot"],
         )
         mock_db_session.commit.assert_awaited_once()
 
     @pytest.mark.anyio
+    async def test_create_booking_slot_not_found(self, booking_service, mock_slot_repo):
+        mock_slot_repo.get_by_id.return_value = None
+
+        with pytest.raises(HTTPException) as exc_info:
+            await booking_service.create_booking(
+                slot_id=999, booking_date=date(2026, 7, 20), user_id=2
+            )
+
+        assert exc_info.value.status_code == 404
+        assert exc_info.value.detail == "Slot not found"
+        mock_slot_repo.get_by_id.assert_awaited_once_with(999)
+
+    @pytest.mark.anyio
+    async def test_create_booking_past_date(self, booking_service, mock_slot_repo):
+        mock_slot_repo.get_by_id.return_value = MagicMock()
+
+        with pytest.raises(HTTPException) as exc_info:
+            await booking_service.create_booking(
+                slot_id=1, booking_date=date(2020, 1, 1), user_id=2
+            )
+
+        assert exc_info.value.status_code == 400
+        assert exc_info.value.detail == "Cannot book a slot in the past"
+
+    @pytest.mark.anyio
     async def test_create_booking_integrity_error(
-        self, booking_service, mock_booking_repo, mock_db_session
+        self, booking_service, mock_booking_repo, mock_db_session, mock_slot_repo
     ):
+        mock_slot_repo.get_by_id.return_value = MagicMock()
         mock_booking_repo.create.side_effect = IntegrityError("", "", Exception(""))
 
         with pytest.raises(HTTPException) as exc_info:
             await booking_service.create_booking(
-                slot_id=999, date=date(2026, 6, 20), user_id=2
+                slot_id=999, booking_date=date(2026, 7, 20), user_id=2
             )
 
         assert exc_info.value.status_code == 409
-        assert exc_info.value.detail == "Slot is already booked or doesn't exist"
+        assert exc_info.value.detail == "Slot is already booked"
         mock_db_session.rollback.assert_awaited_once()
         mock_db_session.commit.assert_not_awaited()
 
@@ -120,6 +153,19 @@ class TestCancelBooking:
 
         assert exc_info.value.status_code == 403
         assert exc_info.value.detail == "Not accessed to the booking"
+
+    @pytest.mark.anyio
+    async def test_cancel_already_cancelled_booking(
+        self, booking_service, mock_booking_repo, mock_booking
+    ):
+        mock_booking.status = Status.CANCELLED_BY_USER
+        mock_booking_repo.get_by_id.return_value = mock_booking
+
+        with pytest.raises(HTTPException) as exc_info:
+            await booking_service.cancel_booking(booking_id=1, user_id=2)
+
+        assert exc_info.value.status_code == 400
+        assert exc_info.value.detail == "Booking is already cancelled"
 
 
 class TestGetManyBookings:

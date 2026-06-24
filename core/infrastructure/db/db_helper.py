@@ -26,12 +26,6 @@ class DatabaseHelper:
             autocommit=False,
             expire_on_commit=False,
         )
-        self.session_factory = async_sessionmaker(
-            bind=self.engine,
-            autoflush=False,
-            autocommit=False,
-            expire_on_commit=False,
-        )
 
 
 db_helper = DatabaseHelper()

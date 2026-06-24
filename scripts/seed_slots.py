@@ -1,22 +1,27 @@
 import asyncio
-from datetime import datetime, timedelta, timezone
+from datetime import time, timezone
 from core.infrastructure.db.repositories import SlotRepository
 from core.infrastructure.db.db_helper import db_helper
 
 
 async def seed_slot():
-
-    base_time = datetime(2026, 6, 20, 9, 0, tzinfo=timezone.utc)
-    repo = SlotRepository()
+    repo = SlotRepository(db_helper.session_factory())
     async with db_helper.session_factory() as session:
-        for i in range(10):  # Создадим 10 слотов подряд
-            start = base_time + timedelta(hours=i)
-            end = start + timedelta(hours=1)
-            await repo.create(
-                session=session,
-                data={"start_time": start, "end_time": end, "room_id": 1},
+        repo.session = session
+        slots = []
+        for i in range(10):
+            start_hour = 9 + i
+            end_hour = start_hour + 1
+            slot = await repo.create(
+                data={
+                    "start_time": time(start_hour, 0, tzinfo=timezone.utc),
+                    "end_time": time(end_hour, 0, tzinfo=timezone.utc),
+                    "room_id": 1,
+                },
             )
-            await session.commit()
+            slots.append(slot)
+        await session.commit()
+        print(f"Created {len(slots)} slots")
 
 
 if __name__ == "__main__":

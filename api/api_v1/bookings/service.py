@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from api.deps.get_repo import get_repository
@@ -8,7 +8,7 @@ from fastapi import Depends, HTTPException, status
 
 from api.api_v1.bookings.schemas import BookingResponseSchema
 from api.deps.db_session import get_db_session
-from core.infrastructure.db.repositories import BookingRepository
+from core.infrastructure.db.repositories import BookingRepository, SlotRepository
 
 
 class BookingService:
@@ -16,16 +16,33 @@ class BookingService:
         self,
         db_session: AsyncSession = Depends(get_db_session),
         repo: BookingRepository = Depends(get_repository(BookingRepository)),
+        slot_repo: SlotRepository = Depends(get_repository(SlotRepository)),
     ):
         self.db_session = db_session
         self.repo = repo
+        self.slot_repo = slot_repo
 
     async def create_booking(
-        self, slot_id: int, date: date, user_id: int
+        self, slot_id: int, booking_date: date, user_id: int
     ) -> BookingResponseSchema:
+        # Проверка, что дата не в прошлом
+        if booking_date < datetime.now(timezone.utc).date():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot book a slot in the past",
+            )
+
+        # Проверка существования слота
+        slot = await self.slot_repo.get_by_id(slot_id)
+        if not slot:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Slot not found",
+            )
+
         try:
             booking = await self.repo.create(
-                {"slot_id": slot_id, "user_id": user_id, "date": date},
+                {"slot_id": slot_id, "user_id": user_id, "date": booking_date},
                 refresh_attributes=["slot"],
             )
             await self.db_session.commit()
@@ -34,7 +51,7 @@ class BookingService:
             await self.db_session.rollback()
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Slot is already booked or doesn't exist",
+                detail="Slot is already booked",
             )
 
     async def cancel_booking(
@@ -52,6 +69,11 @@ class BookingService:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not accessed to the booking",
+            )
+        if booking.status != Status.BOOKED:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Booking is already cancelled",
             )
 
         cancelled_booking = await self.repo.update(

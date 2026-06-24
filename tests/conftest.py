@@ -69,7 +69,7 @@ async def seed_slots(db_session: AsyncSession, seed_rooms) -> None:
 @pytest.fixture(scope="function")
 async def seed_roles(db_session: AsyncSession) -> None:
     admin = Role(id=1, name="admin")
-    manager = Role(id=2, name="manager")
+    manager = Role(id=2, name="employee")
     client = Role(id=3, name="client")
 
     db_session.add_all([admin, manager, client])

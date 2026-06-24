@@ -18,6 +18,12 @@ class AdminBookingService(BookingService):
                 status_code=status.HTTP_404_NOT_FOUND, detail="No such booking"
             )
 
+        if booking.status != Status.BOOKED:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Booking is already cancelled",
+            )
+
         cancelled_booking = await self.repo.update(
             obj=booking,
             data={"status": Status.CANCELLED_BY_ADMIN},

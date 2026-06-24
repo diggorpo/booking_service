@@ -7,6 +7,7 @@ from fastapi import HTTPException
 from api.api_v1.bookings.admin.service import AdminBookingService
 from api.api_v1.bookings.schemas import BookingResponseSchema
 from core.infrastructure.db.repositories.bookings import BookingRepository
+from core.infrastructure.db.repositories.slots import SlotRepository
 from core.infrastructure.db.models.booking import Status
 
 
@@ -21,10 +22,16 @@ def mock_booking_repo():
 
 
 @pytest.fixture
-def admin_booking_service(mock_db_session, mock_booking_repo):
+def mock_slot_repo():
+    return AsyncMock(spec=SlotRepository)
+
+
+@pytest.fixture
+def admin_booking_service(mock_db_session, mock_booking_repo, mock_slot_repo):
     service = AdminBookingService.__new__(AdminBookingService)
     service.db_session = mock_db_session
     service.repo = mock_booking_repo
+    service.slot_repo = mock_slot_repo
     return service
 
 
